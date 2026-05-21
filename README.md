@@ -28,8 +28,8 @@ Fast, free downloader for Instagram Reels and TikTok videos — no watermarks, n
 ### Steps
 
 ```bash
-git clone https://github.com/stevengalocr/personal-downloaders.git
-cd personal-downloaders
+git clone https://github.com/stevengalocr/devloaders.git
+cd devloaders
 npm install
 cp .env.local.example .env.local
 # Edit .env.local and paste your RAPIDAPI_KEY
