@@ -13,10 +13,9 @@ const SplineScene = dynamic(
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center">
-        <div className="relative w-20 h-20">
+        <div className="relative w-16 h-16">
           <div className="absolute inset-0 rounded-full border border-white/8" />
-          <div className="absolute inset-0 rounded-full border-t-2 border-violet-500/50 animate-spin" />
-          <div className="absolute inset-3 rounded-full border border-white/5 animate-pulse" />
+          <div className="absolute inset-0 rounded-full border-t border-violet-500/40 animate-spin" />
         </div>
       </div>
     ),
@@ -32,7 +31,7 @@ const PLATFORMS = {
     label: 'Instagram',
     gradient: 'from-violet-500 via-fuchsia-500 to-pink-500',
     activePill: 'from-violet-600 to-fuchsia-600',
-    glowColor: 'rgba(139,92,246,0.12)',
+    glowColor: 'rgba(139,92,246,0.14)',
     icon: (
       <svg
         width="16"
@@ -54,7 +53,7 @@ const PLATFORMS = {
     label: 'TikTok',
     gradient: 'from-cyan-400 via-sky-500 to-blue-600',
     activePill: 'from-cyan-600 to-blue-600',
-    glowColor: 'rgba(6,182,212,0.12)',
+    glowColor: 'rgba(6,182,212,0.14)',
     icon: (
       <svg
         width="16"
@@ -71,12 +70,6 @@ const PLATFORMS = {
     ),
   },
 } as const;
-
-const FEATURES = [
-  { icon: '⚡', label: 'Instantáneo' },
-  { icon: '✦', label: 'Sin marca de agua' },
-  { icon: '○', label: 'Sin registro' },
-];
 
 /* ── Fade-up animation preset ─────────────────────────────────────── */
 
@@ -128,25 +121,12 @@ export default function Home() {
             <span
               className={`text-xl font-bold bg-gradient-to-r ${pConfig.gradient} bg-clip-text text-transparent transition-all duration-700`}
             >
-              Galo
+              GaloDev
             </span>
             <span className="text-xl font-bold text-white/20">↓</span>
             <span className="hidden sm:block text-xs font-mono text-zinc-600 border border-zinc-800 rounded-full px-2.5 py-0.5">
               downloader
             </span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center gap-2"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-xs font-mono text-zinc-500">online</span>
           </motion.div>
         </header>
 
@@ -158,22 +138,8 @@ export default function Home() {
               {/* ── Left: Tool panel ─────────────────────────────────── */}
               <div className="flex flex-col gap-8 max-w-lg">
 
-                {/* Badge */}
-                <motion.div {...fadeUp(0)}>
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border transition-all duration-700 ${
-                      platform === 'reels'
-                        ? 'bg-violet-500/8 text-violet-400 border-violet-500/20'
-                        : 'bg-cyan-500/8 text-cyan-400 border-cyan-500/20'
-                    }`}
-                  >
-                    <span className="w-1 h-1 rounded-full bg-current animate-pulse-glow" />
-                    Descarga gratis · Sin marca de agua · Rápido
-                  </span>
-                </motion.div>
-
                 {/* Heading */}
-                <motion.div {...fadeUp(0.08)} className="space-y-3">
+                <motion.div {...fadeUp(0)} className="space-y-3">
                   <h1 className="text-4xl sm:text-5xl xl:text-[3.5rem] font-extrabold leading-[1.06] tracking-tight">
                     <span className="text-gradient-neutral">Descarga lo que</span>
                     <br />
@@ -189,7 +155,7 @@ export default function Home() {
                 </motion.div>
 
                 {/* Platform switcher */}
-                <motion.div {...fadeUp(0.16)}>
+                <motion.div {...fadeUp(0.1)}>
                   <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/[0.04] border border-white/8">
                     {(Object.entries(PLATFORMS) as [Platform, typeof PLATFORMS[Platform]][]).map(
                       ([key, cfg]) => {
@@ -216,7 +182,7 @@ export default function Home() {
                 </motion.div>
 
                 {/* Downloader — AnimatePresence for platform switch */}
-                <motion.div {...fadeUp(0.24)}>
+                <motion.div {...fadeUp(0.18)}>
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={platform}
@@ -230,51 +196,45 @@ export default function Home() {
                   </AnimatePresence>
                 </motion.div>
 
-                {/* Feature pills */}
-                <motion.div {...fadeUp(0.32)} className="flex flex-wrap gap-3">
-                  {FEATURES.map((f) => (
-                    <span
-                      key={f.label}
-                      className="flex items-center gap-1.5 text-xs font-mono text-zinc-600 bg-white/[0.02] border border-white/6 rounded-full px-3 py-1.5"
-                    >
-                      <span className="text-zinc-500">{f.icon}</span>
-                      {f.label}
-                    </span>
-                  ))}
-                </motion.div>
               </div>
 
-              {/* ── Right: 3D Spline robot ────────────────────────────── */}
+              {/* ── Right: 3D Spline robot — frameless, floating ─────── */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 1.2, delay: 0.3 }}
-                className="hidden lg:block relative h-[580px] xl:h-[640px]"
+                transition={{ duration: 1.6, delay: 0.2 }}
+                className="hidden lg:block relative self-stretch"
+                style={{ minHeight: '580px' }}
               >
-                {/* Spotlight from above */}
+                {/* Spotlight — illuminates robot from above */}
                 <Spotlight
                   className="-top-40 left-1/2 -translate-x-1/2"
                   fill="white"
                 />
 
-                {/* Ambient glow that shifts with platform */}
+                {/* Platform-tinted ambient glow — pure radial, no frame shape */}
                 <div
-                  className="absolute inset-0 rounded-3xl blur-[80px] transition-all duration-1000 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none transition-all duration-1000"
                   style={{
-                    background: `radial-gradient(ellipse at 50% 30%, ${pConfig.glowColor}, transparent 70%)`,
+                    background: `radial-gradient(ellipse 70% 60% at 50% 35%, ${pConfig.glowColor}, transparent)`,
                   }}
                 />
 
-                {/* Spline canvas */}
-                <div className="relative w-full h-full">
+                {/* Spline canvas — bleeds out of column for open-space feel */}
+                <div className="absolute -inset-x-10 -top-16 bottom-0">
                   <SplineScene
                     scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
                     className="w-full h-full"
                   />
                 </div>
 
-                {/* Decorative bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#020202] to-transparent pointer-events-none" />
+                {/* Bottom dissolve — blends robot base into page */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(to top, #020202 0%, rgba(2,2,2,0.6) 40%, transparent 100%)',
+                  }}
+                />
               </motion.div>
 
             </div>
@@ -286,9 +246,7 @@ export default function Home() {
           <p className="text-xs text-zinc-700 font-mono">
             © {new Date().getFullYear()} GaloDev · Solo para contenido con permisos
           </p>
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-mono text-zinc-800">v1.0</span>
-          </div>
+          <span className="text-xs font-mono text-zinc-800">v1.0</span>
         </footer>
 
       </div>
