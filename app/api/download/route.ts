@@ -17,17 +17,36 @@ type VideoResult = {
 
 /* ── Rate limiter (in-memory, per IP) ───────────────────────────── */
 
-const RATE_WINDOW_MS = 60_000; // 1 minute
-const RATE_MAX = 5;            // max requests per window
-
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 5;
 const ipLog = new Map<string, number[]>();
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  const hits = (ipLog.get(ip) ?? []).filter(t => now - t < RATE_WINDOW_MS);
+  const hits = (ipLog.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
   hits.push(now);
   ipLog.set(ip, hits);
   return hits.length > RATE_MAX;
+}
+
+/* ── URL allowlist — prevents SSRF ─────────────────────────────── */
+
+const ALLOWED_HOSTNAMES = new Set([
+  'instagram.com',
+  'www.instagram.com',
+  'tiktok.com',
+  'www.tiktok.com',
+  'vm.tiktok.com',
+  'vt.tiktok.com',
+]);
+
+function isAllowedUrl(raw: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(raw);
+    return (protocol === 'https:' || protocol === 'http:') && ALLOWED_HOSTNAMES.has(hostname);
+  } catch {
+    return false;
+  }
 }
 
 /* ── URL helpers ────────────────────────────────────────────────── */
@@ -48,7 +67,7 @@ function cleanUrl(raw: string): string {
 }
 
 function detectPlatform(url: string): 'tiktok' | 'instagram' {
-  return url.includes('tiktok.com') || url.includes('vm.tiktok.com') ? 'tiktok' : 'instagram';
+  return url.includes('tiktok.com') ? 'tiktok' : 'instagram';
 }
 
 /* ── Instagram downloader ───────────────────────────────────────── */
@@ -66,7 +85,7 @@ async function fetchInstagram(url: string, apiKey: string): Promise<VideoResult 
   });
 
   if (!res.ok) return null;
-  const d = await res.json() as Record<string, unknown>;
+  const d = (await res.json()) as Record<string, unknown>;
   if (!Array.isArray(d.media)) return null;
 
   const items = d.media as Record<string, unknown>[];
@@ -76,7 +95,7 @@ async function fetchInstagram(url: string, apiKey: string): Promise<VideoResult 
 
   for (const item of items) {
     const itemUrl = String(item.url ?? '');
-    if (!itemUrl.startsWith('http')) continue;
+    if (!itemUrl.startsWith('https://')) continue;
 
     const type = String(item.type ?? '').toLowerCase();
 
@@ -94,11 +113,10 @@ async function fetchInstagram(url: string, apiKey: string): Promise<VideoResult 
     }
   }
 
-  // Carousel: offer images as downloads if no video found
   if (downloads.length === 0) {
     items.forEach((item, i) => {
       const itemUrl = String(item.url ?? '');
-      if (itemUrl.startsWith('http')) {
+      if (itemUrl.startsWith('https://')) {
         downloads.push({ label: `Imagen ${i + 1}`, url: itemUrl, type: 'video' });
       }
     });
@@ -108,8 +126,12 @@ async function fetchInstagram(url: string, apiKey: string): Promise<VideoResult 
 
   return {
     platform: 'instagram',
-    title: null, thumbnail,
-    duration: null, author: null, authorHandle: null, authorAvatar: null,
+    title: null,
+    thumbnail,
+    duration: null,
+    author: null,
+    authorHandle: null,
+    authorAvatar: null,
     downloads,
   };
 }
@@ -125,22 +147,19 @@ async function fetchTikTok(url: string, apiKey: string): Promise<VideoResult | n
   });
 
   if (!res.ok) return null;
-  const d = await res.json() as Record<string, unknown>;
+  const d = (await res.json()) as Record<string, unknown>;
 
   const downloads: DownloadOption[] = [];
-  const videoArr = Array.isArray(d.video) ? d.video as string[] : [];
-  const musicArr = Array.isArray(d.music) ? d.music as string[] : [];
-  const coverArr = Array.isArray(d.cover) ? d.cover as string[] : [];
+  const videoArr = Array.isArray(d.video) ? (d.video as string[]) : [];
+  const musicArr = Array.isArray(d.music) ? (d.music as string[]) : [];
+  const coverArr = Array.isArray(d.cover) ? (d.cover as string[]) : [];
 
-  if (videoArr[0]?.startsWith('http')) {
+  if (videoArr[0]?.startsWith('https://'))
     downloads.push({ label: 'Sin marca de agua', url: videoArr[0], type: 'video' });
-  }
-  if (videoArr[1]?.startsWith('http')) {
+  if (videoArr[1]?.startsWith('https://'))
     downloads.push({ label: 'HD', url: videoArr[1], type: 'video' });
-  }
-  if (musicArr[0]?.startsWith('http')) {
+  if (musicArr[0]?.startsWith('https://'))
     downloads.push({ label: 'Solo audio (MP3)', url: musicArr[0], type: 'audio' });
-  }
 
   if (downloads.length === 0) return null;
 
@@ -150,7 +169,8 @@ async function fetchTikTok(url: string, apiKey: string): Promise<VideoResult | n
     thumbnail: coverArr[0] ?? null,
     duration: typeof d.duration === 'number' ? d.duration : null,
     author: typeof d.author === 'string' ? d.author : null,
-    authorHandle: null, authorAvatar: null,
+    authorHandle: null,
+    authorAvatar: null,
     downloads,
   };
 }
@@ -158,10 +178,10 @@ async function fetchTikTok(url: string, apiKey: string): Promise<VideoResult | n
 /* ── Route ──────────────────────────────────────────────────────── */
 
 export async function POST(req: NextRequest) {
-  // Rate limit by IP
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim()
-    ?? req.headers.get('x-real-ip')
-    ?? 'unknown';
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown';
 
   if (isRateLimited(ip)) {
     return NextResponse.json(
@@ -170,31 +190,50 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Parse body
   let body: { url?: string };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ success: false, error: 'Cuerpo inválido.' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Petición inválida.' }, { status: 400 });
   }
 
   const rawUrl = body.url?.trim();
-  if (!rawUrl) {
-    return NextResponse.json({ success: false, error: 'Falta el enlace.' }, { status: 400 });
+
+  if (!rawUrl || rawUrl.length > 2048) {
+    return NextResponse.json({ success: false, error: 'Enlace inválido o demasiado largo.' }, { status: 400 });
   }
 
-  const apiKey = process.env.RAPIDAPI_KEY ?? '';
+  if (!isAllowedUrl(rawUrl)) {
+    return NextResponse.json(
+      { success: false, error: 'Solo se admiten enlaces de Instagram o TikTok.' },
+      { status: 400 }
+    );
+  }
+
+  const apiKey = process.env.RAPIDAPI_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { success: false, error: 'Servicio no configurado. Contacta al administrador.' },
+      { status: 503 }
+    );
+  }
+
   const url = cleanUrl(rawUrl);
   const platform = detectPlatform(rawUrl);
 
   try {
-    const result = platform === 'instagram'
-      ? await fetchInstagram(url, apiKey)
-      : await fetchTikTok(url, apiKey);
+    const result =
+      platform === 'instagram'
+        ? await fetchInstagram(url, apiKey)
+        : await fetchTikTok(url, apiKey);
 
     if (!result) {
       return NextResponse.json(
-        { success: false, error: 'No se pudo obtener el video. Asegúrate de que el enlace es público y correcto.' },
+        {
+          success: false,
+          error:
+            'No se pudo obtener el video. Asegúrate de que el enlace es público y correcto.',
+        },
         { status: 422 }
       );
     }
@@ -206,16 +245,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export async function GET(req: NextRequest) {
-  const rawUrl = req.nextUrl.searchParams.get('url');
-  if (!rawUrl) {
-    return NextResponse.json({ success: false, error: 'Falta el enlace.' }, { status: 400 });
-  }
-  return POST(new NextRequest(req.url, {
-    method: 'POST',
-    body: JSON.stringify({ url: rawUrl }),
-    headers: { 'Content-Type': 'application/json' },
-  }));
 }
