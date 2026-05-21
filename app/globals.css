@@ -88,3 +88,10 @@
     background-clip: text;
   }
 }
+
+/* ── Remove Spline "Built with Spline" watermark ──────────────────── */
+canvas ~ div,
+a[href*="spline.design"] {
+  display: none !important;
+  pointer-events: none !important;
+}
