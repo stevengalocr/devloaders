@@ -15,6 +15,20 @@ export const metadata: Metadata = {
     template: '%s | GaloDev',
   },
 
+  icons: {
+    icon: [
+      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/favicon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icons/icon-192.png',   sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png',   sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/icons/favicon-32.png',
+  },
+
   description:
     'Descarga Reels de Instagram y videos de TikTok sin marca de agua, gratis y sin registro. Rápido, sin límites. Free Instagram Reels & TikTok video downloader — no watermark, no sign-up.',
 
@@ -84,7 +98,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#020202',
+  themeColor: '#7c3aed',
   width: 'device-width',
   initialScale: 1,
 };

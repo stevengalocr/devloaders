@@ -81,11 +81,15 @@ Your key is shown in **Header Parameters → X-RapidAPI-Key** on any RapidAPI en
 galodev-downloaders/
 ├── app/
 │   ├── page.tsx               # Client hero: platform switcher + Spline 3D robot
-│   ├── layout.tsx             # Root layout with full SEO metadata (OG, Twitter, canonical)
+│   ├── layout.tsx             # Root layout with full SEO metadata (OG, Twitter, canonical, icons)
 │   ├── globals.css            # Tailwind base + custom utilities (glass, dot-grid, noise)
 │   ├── opengraph-image.tsx    # Dynamic 1200×630 OG image (edge runtime)
 │   ├── robots.ts              # Blocks /api/* from crawlers, points to sitemap
 │   ├── sitemap.ts             # XML sitemap
+│   ├── manifest.ts            # PWA web manifest (standalone, theme #7c3aed)
+│   ├── favicon.ico            # Multi-size favicon (16 / 32 / 48 px, RGBA)
+│   ├── icon.png               # Default app icon 192×192 (Next.js auto-detected)
+│   ├── apple-icon.png         # Apple touch icon 180×180 (Next.js auto-detected)
 │   └── api/
 │       └── download/
 │           ├── route.ts       # POST: URL validation + rate limit + RapidAPI call
@@ -102,6 +106,19 @@ galodev-downloaders/
 │       ├── splite.tsx            # Lazy Spline 3D scene loader
 │       └── card.tsx              # shadcn-style Card primitives
 │
+├── public/
+│   └── icons/
+│       ├── galodev-icon-source.png   # Master source icon (1254×1254)
+│       ├── favicon-16.png            # Browser tab (16×16)
+│       ├── favicon-32.png            # Browser tab HiDPI / shortcut (32×32)
+│       ├── favicon-48.png            # Windows taskbar (48×48)
+│       ├── apple-touch-icon.png      # iOS "Add to Home Screen" (180×180)
+│       ├── icon-192.png              # Android Chrome icon (192×192)
+│       ├── icon-512.png              # Android splash / Play Store (512×512)
+│       ├── icon-maskable-192.png     # Android adaptive icon 192×192
+│       ├── icon-maskable-512.png     # Android adaptive icon 512×512
+│       └── og-icon.png              # Open Graph supplemental (512×512)
+│
 ├── lib/
 │   └── utils.ts               # cn() — clsx + tailwind-merge
 │
@@ -110,6 +127,39 @@ galodev-downloaders/
 ├── tailwind.config.ts         # Custom animations (aurora, spotlight, float)
 └── tsconfig.json
 ```
+
+---
+
+## Icons & PWA
+
+The app is fully installable as a PWA on iOS and Android. All icons derive from a single **1254×1254 source** (`public/icons/galodev-icon-source.png`).
+
+| File | Size | Use |
+|---|---|---|
+| `app/favicon.ico` | 16 / 32 / 48 px | Browser tab, bookmarks |
+| `app/apple-icon.png` | 180×180 | iOS "Add to Home Screen" |
+| `app/icon.png` | 192×192 | Android / general |
+| `public/icons/icon-512.png` | 512×512 | Android splash screen |
+| `public/icons/icon-maskable-*.png` | 192 / 512 px | Android adaptive icons |
+
+The `app/manifest.ts` exports a Next.js `MetadataRoute.Manifest` with:
+- `display: "standalone"` — launches without browser chrome
+- `theme_color: "#7c3aed"` — matches brand violet
+- `background_color: "#0a0714"` — dark splash background
+- Both `any` and `maskable` icon purposes for full Android compatibility
+
+### Regenerating icons
+
+If the source image changes, regenerate with:
+
+```bash
+node -e "
+const sharp = require('sharp');
+// edit sizes array as needed, then run
+"
+```
+
+Or replace `public/icons/galodev-icon-source.png` and re-run the generation script.
 
 ---
 
